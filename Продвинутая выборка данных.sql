@@ -6,19 +6,25 @@ SELECT COUNT(s.id) FROM albums a
 JOIN singles s ON s.albums_id = a.id
 WHERE year BETWEEN 2019 AND 2020;
 
-SELECT AVG(time) FROM singles
-GROUP BY albums_id;
+SELECT AVG(sl.time), a.name  FROM singles sl
+JOIN singers sg ON sl.albums_id = sg.id 
+JOIN singersalbums sa ON sg.id = sa.singers_id
+JOIN albums a ON sa.albums_id = a.id 
+GROUP BY a.name;
 
-SELECT COUNT(s.singers_id) FROM albums a 
-JOIN singersalbums s ON s.albums_id = a.id
-WHERE year != 2020;
+SELECT COUNT(sa.singers_id) from singers s
+JOIN singersalbums sa ON s.id = sa.singers_id 
+JOIN albums a ON sa.albums_id = a.id 
+WHERE sa.singers_id NOT IN
+(SELECT sa.singers_id FROM albums a 
+JOIN singersalbums sa ON sa.albums_id = a.id
+WHERE year = 2020);
 
-SELECT c.name FROM collections c
-JOIN singlescollections s on  c.id = s.collections_id 
+SELECT DISTINCT c.name FROM collections c
+JOIN singlescollections s ON  c.id = s.collections_id 
 JOIN singles sl ON s.singles_id  = sl.id
 JOIN singers sg ON sl.albums_id = sg.id
-WHERE sg.name = 'Metallica'
-GROUP BY c.name;
+WHERE sg.name = 'Metallica';
 
 SELECT a.name FROM albums a
 JOIN singersalbums sa ON a.id = sa.albums_id 
@@ -33,11 +39,18 @@ WHERE sc.singles_id  IS NULL;
 
 SELECT sg.name FROM singers sg
 JOIN singles sl ON sl.albums_id = sg.id 
-where sl.time = (SELECT MIN(time) FROM singles)
+WHERE sl.time = (SELECT MIN(time) FROM singles)
 
-SELECT a.name, COUNT(sl.albums_id) FROM albums a 
+SELECT COUNT(*), a.id, a.name  FROM albums a 
 JOIN singersalbums sa ON a.id = sa.albums_id 
 JOIN singers sg ON sa.singers_id = sg.id 
-JOIN singles sl ON sg.id = sl.albums_id 
-GROUP BY a.name
-ORDER BY COUNT;
+JOIN singles sl ON sg.id = sl.albums_id
+GROUP BY a.id
+having COUNT(*) = 
+(SELECT COUNT(*) FROM albums a 
+JOIN singersalbums sa ON a.id = sa.albums_id 
+JOIN singers sg ON sa.singers_id = sg.id 
+JOIN singles sl ON sg.id = sl.albums_id
+GROUP BY a.id
+ORDER BY count
+LIMIT 1);
